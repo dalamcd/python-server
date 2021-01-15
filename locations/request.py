@@ -1,3 +1,7 @@
+import sqlite3
+import json
+from models import Location
+
 LOCATIONS = [
 	{
 		"id": 1,
@@ -6,17 +10,49 @@ LOCATIONS = [
 ]
 
 def get_all_locations():
-	return LOCATIONS
+	with sqlite3.connect("./kennel.db") as conn:
+
+		conn.row_factory = sqlite3.Row
+		db_cursor = conn.cursor()
+
+		db_cursor.execute("""
+		SELECT
+			l.id,
+			l.name,
+			l.address
+		FROM location l
+		""")
+
+		dataset = db_cursor.fetchall()
+
+		locations = []
+
+		for row in dataset:
+			loc = Location(row["id"], row["name"], row["address"])
+			locations.append(loc.__dict__)
+		
+	return json.dumps(locations)
+
 
 def get_single_location(id):
+	with sqlite3.connect("./kennel.db") as conn:
 
-	requested_location = None
+		conn.row_factory = sqlite3.Row
+		db_cursor = conn.cursor()
 
-	for location in LOCATIONS:
-		if location["id"] == id:
-			requested_location = location
+		db_cursor.execute("""
+		SELECT
+			l.id,
+			l.name,
+			l.address
+		FROM location l
+		WHERE l.id = ?
+		""", (id, ))
+
+		data = db_cursor.fetchone()
+		loc = Location(data["id"], data["name"], data["address"])
 	
-	return requested_location
+	return json.dumps(loc.__dict__)
 
 def create_location(location):
 
