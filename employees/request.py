@@ -1,6 +1,7 @@
 import sqlite3
 import json
 from models import Employee
+from models import Location
 
 EMPLOYEES = [
     {
@@ -29,8 +30,12 @@ def get_all_employees():
             e.id,
             e.name,
             e.address,
-            e.location_id
+            e.location_id,
+            l.name location_name,
+            l.address location_address
         FROM employee e
+        JOIN location l
+            ON l.id = e.location_id
         """)
 
         employees = []
@@ -40,7 +45,8 @@ def get_all_employees():
         for row in dataset:
             emp = Employee(row['id'], row['name'], row['address'],
                             row['location_id'])
-
+            location = Location(row['location_id'], row['location_name'], row['location_address'])
+            emp.location = location.__dict__
             employees.append(emp.__dict__)
 
     return json.dumps(employees)
@@ -103,18 +109,34 @@ def create_employee(employee):
 	return employee
 
 def delete_employee(id):
-	employee_index = -1
+    with sqlite3.connect("./kennel.db") as conn:
+        
+        db_cursor = conn.cursor()
 
-	for index, employee in enumerate(EMPLOYEES):
-		if employee["id"] == id:
-			employee_index = index
-
-	if employee_index >= 0:
-		EMPLOYEES.pop(employee_index)
+        db_cursor.execute("""
+        DELETE FROM employee
+        WHERE id = ?
+        """, (id, ))
 
 def update_employee(id, new_employee):
+    with sqlite3.connect("./kennel.db") as conn:
 
-    for index, employee in enumerate(EMPLOYEES):
-        if employee["id"] == id:
-            EMPLOYEES[index] = new_employee
-            break
+        db_cursor = conn.cursor()
+
+        db_cursor.execute("""
+        UPDATE employee
+            SET
+               id = ?,
+               name = ?,
+               address = ?,
+               location_id = ?
+        WHERE id = ?
+        """, (new_employee["id"], new_employee["name"], new_employee["address"],
+                    new_employee["location_id"], id))
+        
+        rowcount = db_cursor.rowcount
+
+        if rowcount == 0:
+            return False
+        else:
+            return True

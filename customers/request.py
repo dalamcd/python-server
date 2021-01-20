@@ -1,5 +1,6 @@
 import sqlite3
 import json
+from sqlite3 import dbapi2
 from models import Customer
 
 CUSTOMERS = [
@@ -113,18 +114,35 @@ def create_customer(customer):
 	return customer
 
 def delete_customer(id):
-	customer_index = -1
+    with sqlite3.connect("./kennel.db") as conn:
+        
+        db_cursor = conn.cursor()
 
-	for index, customer in enumerate(CUSTOMERS):
-		if customer["id"] == id:
-			customer_index = index
-
-	if customer_index >= 0:
-		CUSTOMERS.pop(customer_index)
+        db_cursor.execute("""
+        DELETE FROM customer
+        WHERE id = ?
+        """, (id, ))
 
 def update_customer(id, new_customer):
+    with sqlite3.connect("./kennel.db") as conn:
 
-    for index, customer in enumerate(CUSTOMERS):
-        if customer["id"] == id:
-            CUSTOMERS[index] = new_customer
-            break
+        db_cursor = conn.cursor()
+
+        db_cursor.execute("""
+        UPDATE customer
+            SET
+              id = ?,
+              name = ?,
+              address = ?,
+              email = ?,
+              password = ?
+        WHERE id = ?
+        """, (new_customer["id"], new_customer["name"], new_customer["address"], new_customer["email"],
+                    new_customer["password"], id))
+        
+        rowcount = db_cursor.rowcount
+
+        if rowcount == 0:
+            return False
+        else:
+            return True

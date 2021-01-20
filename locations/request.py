@@ -65,18 +65,32 @@ def create_location(location):
 	return location
 
 def delete_location(id):
-	location_index = -1
+    with sqlite3.connect("./kennel.db") as conn:
+        
+        db_cursor = conn.cursor()
 
-	for index, location in enumerate(LOCATIONS):
-		if location["id"] == id:
-			location_index = index
-
-	if location_index >= 0:
-		LOCATIONS.pop(location_index)
+        db_cursor.execute("""
+        DELETE FROM location
+        WHERE id = ?
+        """, (id, ))
 
 def update_location(id, new_location):
+    with sqlite3.connect("./kennel.db") as conn:
 
-    for index, location in enumerate(LOCATIONS):
-        if location["id"] == id:
-            LOCATIONS[index] = new_location
-            break
+        db_cursor = conn.cursor()
+
+        db_cursor.execute("""
+        UPDATE location
+            SET
+             id = ?,
+             name = ?,
+             address = ?
+        WHERE id = ?
+        """, (new_location["id"], new_location["name"], new_location["address"], id))
+        
+        rowcount = db_cursor.rowcount
+
+        if rowcount == 0:
+            return False
+        else:
+            return True
